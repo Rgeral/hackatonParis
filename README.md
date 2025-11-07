@@ -9,30 +9,30 @@
 
 ## Project installation
 
-### 1. Créer env virtuel
+### 1. Create a virtual env
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Installer dépendances
+### 2. Install dependencies
 ```bash
 pip install --upgrade pip
 pip install -r requirement.txt
 pip install -r requirements-dev.txt
 ```
 
-### 3. Activer pre-commit (optionnel)
+### 3. Activate pre-commit (optionnal)
 ```bash
 pre-commit install
 ```
 
-### 4. Tester que ça marche
+### 4. Check if it's work
 ```bash
 python -c "import torch; print('PyTorch:', torch.__version__)"
 ```
 
-### 5. Pour GPU/CUDA (carte NVIDIA)
+### 5. For GPU/CUDA (NVIDIA)
 ```bash
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 ```
