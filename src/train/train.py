@@ -5,10 +5,10 @@ def main():
 	model = YOLO('yolov8s.pt')
 	model.train(
 		data='data.yaml',
-		epochs=5,
+		epochs=2,
 		imgsz=640,
 		batch=16,
-		device='cpu'
+		device=0
 	)
 
 if __name__ == "__main__":

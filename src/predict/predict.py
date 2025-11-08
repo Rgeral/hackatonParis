@@ -5,27 +5,25 @@ from ultralytics import YOLO
 
 def main():
 
-	# Prédiction sur les images de test avec le meilleur modèle entraîné
+	# Validation sur les images de test avec le meilleur modèle entraîné
 	best_model = YOLO('runs/detect/train/weights/best.pt')
-	results = best_model.predict(
-		source='Datasets/splited_dataset/test/images/',
-		save=True,		# sauvegarde les images annotées
+	
+	# Utiliser val() au lieu de predict() pour obtenir les métriques
+	metrics = best_model.val(
+		data='data.yaml',
+		split='test',  # Utiliser le split test au lieu de val
 		device=0
 	)
-	print(f"Prédiction terminée. {len(results)} images traitées.")
+	
+	print("\n" + "="*60)
+	print("📊 MÉTRIQUES SUR LE DATASET TEST")
+	print("="*60)
+	print(f"Précision (Precision): {metrics.box.mp:.4f}")
+	print(f"Rappel (Recall): {metrics.box.mr:.4f}")
+	print(f"mAP@0.5: {metrics.box.map50:.4f}")
+	print(f"mAP@0.5:0.95: {metrics.box.map:.4f}")
+	print("="*60)
 
-	# # Affichage des images prédites (adapté pour script Python)
-	# print("\nImages prédites sauvegardées dans runs/detect/predict/")
-	# predicted_images = glob.glob('runs/detect/predict/*.jpg')[:10]
-	# for img_path in predicted_images:
-	# 	print(f"  - {img_path}")
-	# print(f"\nTotal: {len(predicted_images)} images affichées (limite: 10 premières)\n")
-	# affichage des métriques
-	for i, result in enumerate(results):
-		print(f"Image {i+1}:")
-		print(f"  - Précision: {result.metrics['precision']:.2f}")
-		print(f"  - Rappel: {result.metrics['recall']:.2f}")
-		print(f"  - F1-score: {result.metrics['f1']:.2f}")
 
 if __name__ == "__main__":
 	main()

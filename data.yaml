@@ -4,7 +4,7 @@
 path:
 train: Datasets/augmented_train_dataset/images/
 val: Datasets/splited_dataset/val/images/
-# test: ../images/test/
+test: Datasets/splited_dataset/test/images/
 
 # Classes
 names:
