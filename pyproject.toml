@@ -2,7 +2,12 @@
 name = "drone-detector"
 version = "0.1.0"
 description = "Détection de drones FPV avec IA (YOLO)"
-authors = [rgeral, falonso, tdutel, anfichet]
+authors = [
+    {name = "rgeral"},
+    {name = "falonso"},
+    {name = "tdutel"},
+    {name = "anfichet"}
+]
 requires-python = ">=3.8"
 readme = "README.md"
 license = {text = "MIT"}
