@@ -1,7 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Play, Pause, Trash2, Activity, Target, Clock } from "lucide-react"
+import { Play, Pause, Trash2, Activity, Target, Clock, Map, Grid3x3 } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const DetectionMap = dynamic(() => import("@/components/DetectionMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[600px] flex items-center justify-center bg-zinc-900 rounded-lg border-2 border-zinc-700">
+      Chargement de la carte...
+    </div>
+  ),
+})
 
 interface Detection {
   id: string
@@ -18,6 +28,9 @@ interface Detection {
     x2: number
     y2: number
   }
+  camera_id?: string
+  camera_location?: { lat: number; lng: number; name: string }
+  image_dimensions?: { width: number; height: number }
   image_original: string
   image_annotated: string
   receivedAt: string
@@ -27,6 +40,41 @@ export default function Dashboard() {
   const [detections, setDetections] = useState<Detection[]>([])
   const [isPolling, setIsPolling] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<"grid" | "map">("grid")
+  const [alerts, setAlerts] = useState<Array<{ id: string; message: string; level: string; timestamp: number }>>([])
+
+  // Fonction pour gérer les alertes de danger
+  const handleDangerAlert = (message: string, level: string) => {
+    const newAlert = {
+      id: `alert_${Date.now()}_${Math.random()}`,
+      message,
+      level,
+      timestamp: Date.now(),
+    }
+    
+    setAlerts((prev) => [newAlert, ...prev.slice(0, 4)]) // Garder max 5 alertes
+    
+    // Notification navigateur si supporté et autorisé
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(level === "critical" ? "🚨 ALERTE CRITIQUE" : "⚠️ ALERTE DANGER", {
+        body: message,
+        icon: "/favicon.ico",
+        tag: newAlert.id,
+      })
+    }
+    
+    // Auto-dismiss après 10 secondes
+    setTimeout(() => {
+      setAlerts((prev) => prev.filter((a) => a.id !== newAlert.id))
+    }, 10000)
+  }
+
+  // Demander la permission pour les notifications au chargement
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission()
+    }
+  }, [])
 
   // Polling des détections
   useEffect(() => {
@@ -47,7 +95,7 @@ export default function Dashboard() {
     }
 
     fetchDetections()
-    const interval = setInterval(fetchDetections, 500)
+    const interval = setInterval(fetchDetections, 2000) // Polling toutes les 2 secondes au lieu de 500ms
 
     return () => clearInterval(interval)
   }, [isPolling])
@@ -69,6 +117,46 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      {/* Système d'alertes en haut à droite */}
+      <div className="fixed right-4 top-4 z-50 space-y-2 max-w-md">
+        {alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className={`rounded-lg border-2 p-4 shadow-lg backdrop-blur-sm animate-in slide-in-from-right ${
+              alert.level === "critical"
+                ? "border-red-600 bg-red-50/95 dark:bg-red-950/95"
+                : "border-orange-500 bg-orange-50/95 dark:bg-orange-950/95"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">
+                {alert.level === "critical" ? "🚨" : "⚠️"}
+              </div>
+              <div className="flex-1">
+                <p
+                  className={`text-sm font-medium leading-relaxed ${
+                    alert.level === "critical"
+                      ? "text-red-900 dark:text-red-100"
+                      : "text-orange-900 dark:text-orange-100"
+                  }`}
+                >
+                  {alert.message}
+                </p>
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                  {new Date(alert.timestamp).toLocaleTimeString("fr-FR")}
+                </p>
+              </div>
+              <button
+                onClick={() => setAlerts((prev) => prev.filter((a) => a.id !== alert.id))}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -159,8 +247,38 @@ export default function Dashboard() {
           {error && <span className="ml-4 text-red-600 dark:text-red-400">{error}</span>}
         </div>
 
-        {/* Grille des détections */}
-        {detections.length === 0 ? (
+        {/* Onglets */}
+        <div className="mb-6 flex gap-2 border-b border-zinc-200 dark:border-zinc-800">
+          <button
+            onClick={() => setActiveTab("grid")}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+              activeTab === "grid"
+                ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
+                : "border-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            }`}
+          >
+            <Grid3x3 className="h-4 w-4" />
+            Grille
+          </button>
+          <button
+            onClick={() => setActiveTab("map")}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+              activeTab === "map"
+                ? "border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50"
+                : "border-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            }`}
+          >
+            <Map className="h-4 w-4" />
+            Carte
+          </button>
+        </div>
+
+        {/* Contenu basé sur l'onglet actif */}
+        {activeTab === "map" ? (
+          <div className="rounded-lg">
+            <DetectionMap detections={detections} onDangerAlert={handleDangerAlert} />
+          </div>
+        ) : detections.length === 0 ? (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-white py-20 text-center dark:border-zinc-700 dark:bg-zinc-900">
             <div className="mx-auto max-w-sm">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">

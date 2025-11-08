@@ -15,6 +15,21 @@ export interface Detection {
     x2: number;
     y2: number;
   };
+  camera_id?: string;
+  camera_location?: {
+    lat: number;
+    lng: number;
+    name: string;
+  };
+  image_dimensions?: {
+    width: number;
+    height: number;
+  };
+  drone_heading?: number; // Cap du drone en degrés (0-360°), optionnel
+  drone_location?: {      // Position GPS du drone, optionnelle
+    lat: number;
+    lng: number;
+  };
   image_original: string;
   image_annotated: string;
   receivedAt: string;
