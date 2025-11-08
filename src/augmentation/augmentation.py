@@ -46,6 +46,7 @@ def apply_augmentation(image, bboxes, class_labels, transform_type="horizontal_f
 if __name__ == "__main__":
     import os
     import glob
+    import shutil
     
     transformations_to_test = [
         "horizontal_flip",
@@ -57,7 +58,32 @@ if __name__ == "__main__":
         "brightness",
     ]
     
-    all_images = glob.glob("Datasets/img/*.jpg")
+    source_dir = "Datasets/splited_dataset/train"
+    target_dir = "Datasets/augmented_train_dataset"
+    
+    # Step 1: Create directory structure
+    if os.path.exists(target_dir):
+        print(f"Cleaning existing {target_dir}...")
+        shutil.rmtree(target_dir)
+    
+    print(f"Creating {target_dir} structure...")
+    os.makedirs(f"{target_dir}/images", exist_ok=True)
+    os.makedirs(f"{target_dir}/labels", exist_ok=True)
+    
+    # Step 2: Create classes.txt file
+    with open(f"{target_dir}/classes.txt", 'w') as f:
+        f.write("Drone\n")
+    print(f"Created classes.txt with 'Drone'")
+    
+    # Step 3: Copy images and labels
+    print(f"Copying {source_dir} to {target_dir}...")
+    for img_file in glob.glob(f"{source_dir}/images/*"):
+        shutil.copy2(img_file, f"{target_dir}/images/")
+    for label_file in glob.glob(f"{source_dir}/labels/*"):
+        shutil.copy2(label_file, f"{target_dir}/labels/")
+    print(f"Copy complete.")
+    
+    all_images = glob.glob(f"{target_dir}/images/*.jpg")
     transform_suffixes = ["_blur", "_brightness", "_horizontal_flip", "_vertical_flip", 
                          "_rotation", "_scale", "_perspective", "_noise"]
     
@@ -70,8 +96,12 @@ if __name__ == "__main__":
     total_skipped = 0
     images_ignored = 0
     
+    # Apply augmentations
+    img_dir = f"{target_dir}/images"
+    label_dir = f"{target_dir}/labels"
+    
     for base_name in base_names:
-        image, bboxes, class_labels = load_image_and_labels(base_name)
+        image, bboxes, class_labels = load_image_and_labels(base_name, img_dir=img_dir, label_dir=label_dir)
 
         if image is None or len(bboxes) == 0:
             images_ignored += 1
@@ -86,8 +116,8 @@ if __name__ == "__main__":
                 total_skipped += 1
                 continue
 
-            output_image = f"Datasets/img/{base_name}_{transform_name}.jpg"
-            output_label = f"Datasets/labels/{base_name}_{transform_name}.txt"
+            output_image = f"{img_dir}/{base_name}_{transform_name}.jpg"
+            output_label = f"{label_dir}/{base_name}_{transform_name}.txt"
 
             cv2.imwrite(output_image, aug_image)
             save_yolo_labels(output_label, aug_bboxes, aug_class_labels)
