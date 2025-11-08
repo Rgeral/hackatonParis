@@ -1,236 +1,54 @@
-# Data Augmentation for YOLO
+# Data Augmentation for YOLO — Quick reference
 
-## What is YOLO format?
+This file documents the main helpers in `src/augmentation/utils.py` and `src/augmentation/augmentation.py`.
 
-Each label file (`.txt`) contains one line per object:
-```
-class_id x_center y_center width height
-```
+## YOLO label format
+Each label line should be: `class_id x_center y_center width height` (all values normalized to [0,1]).
 
-Example:
-```
-0 0.20078125 0.51015625 0.021875 0.0390625
-```
+## Main helpers (what and why)
 
-Where:
-- `class_id = 0` (0 = drone detected)
-- `x_center = 0.20078125` (center at 20% from left)
-- `y_center = 0.51015625` (center at 51% from top)
-- `width = 0.021875` (width = 2.2% of image)
-- `height = 0.0390625` (height = 3.9% of image)
+- `utils.load_yolo_labels(label_path) -> (bboxes, class_labels)`
+  - What: Read a YOLO `.txt` file and return `bboxes` = [[x,y,w,h], ...] and `class_labels`.
+  - Why: Centralizes parsing and validation of label files to ensure consistent, normalized coordinates.
 
-## Normalized coordinates
+- `utils.save_yolo_labels(label_path, bboxes, class_labels)`
+  - What: Write YOLO-format labels to `label_path` (creates parent folder if needed).
+  - Why: Keeps writing logic in one place (fixed format, precision) to avoid mistakes when saving augmented labels.
 
-Coordinates are **normalized** (divided by image size) to get values between 0 and 1.
+- `utils.load_image(image_path) -> image | None`
+  - What: Load an image using OpenCV and return a BGR ndarray or `None` if not found.
+  - Why: Encapsulates loading and simple validation so callers can handle missing files cleanly.
 
-**Why?** So they work for any image size.
+- `utils.load_image_and_labels(base_name, img_dir='Datasets/img', label_dir='Datasets/labels') -> (image, bboxes, class_labels)`
+  - What: Convenience helper that loads `{img_dir}/{base_name}.jpg` and `{label_dir}/{base_name}.txt` together.
+  - Why: Reduces boilerplate in the augmentation flow (path building and basic checks).
 
-**Example:**
-```
-Image: 1024 × 768 pixels
-Drone center: x=205 pixels, y=391 pixels
+- `augmentation.apply_augmentation(image, bboxes, class_labels, transform_type) -> (img, bboxes, classes)`
+  - What: Apply an Albumentations pipeline to image and bboxes and return the augmented image and updated bboxes.
+  - Why: Centralizes augmentation parameters and bbox handling (so behavior is consistent and testable).
 
-Normalized:
-x_center = 205 / 1024 = 0.20
-y_center = 391 / 768 = 0.51
-```
+Supported transforms include: `horizontal_flip`, `vertical_flip`, `rotation`, `scale`, `perspective`, `blur`, `noise`, `brightness`, `weather`.
 
-## Why recalculate coordinates during augmentation?
-
-When we transform an image (flip, rotate, zoom), the bounding box coordinates change!
-
-**Example with horizontal flip:**
-```
-Original                    Flipped
-┌──────────────┐           ┌──────────────┐
-│  🚁          │           │          🚁  │
-└──────────────┘           └──────────────┘
-
-x_center: 0.20             x_center: 0.80
-(20% from left)            (80% from left)
-```
-
-We can't just copy the original labels - we need to recalculate them.
-
-## Available functions
-
-### 1. `load_yolo_labels(label_path)`
-
-Reads a YOLO label file and returns two lists.
-
-**Arguments:**
-- `label_path`: Path to the `.txt` file (e.g., `"dataset/labels/image.txt"`)
-
-**Returns:**
-- `bboxes`: List of bounding box coordinates `[[x, y, w, h], ...]`
-- `class_labels`: List of class IDs `[0, 1, ...]`
-
-**What it does:**
-1. Opens the file
-2. Reads line by line
-3. Parses each line into 5 values
-4. Validates coordinates (must be between 0 and 1)
-5. Returns two separate lists
-
-**Example:**
-```python
-bboxes, classes = load_yolo_labels("dataset/labels/image_1.txt")
-# bboxes = [[0.20, 0.51, 0.02, 0.04]]
-# classes = [0]
-```
-
-**Edge case:** If file is empty or doesn't exist, returns `[], []`
-
----
-
-### 2. `save_yolo_labels(label_path, bboxes, class_labels)`
-
-Writes bboxes and classes to a new YOLO label file.
-
-**Arguments:**
-- `label_path`: Path where to save the file (e.g., `"output/labels/image_aug.txt"`)
-- `bboxes`: List of coordinates `[[x, y, w, h], ...]`
-- `class_labels`: List of class IDs `[0, 1, ...]`
-
-**What it does:**
-1. Creates parent directory if needed
-2. Opens file in write mode (overwrites if exists!)
-3. Formats each line as: `"class_id x y w h"`
-4. Writes to file with 8 decimal precision
-
-**Example:**
-```python
-bboxes = [[0.5, 0.5, 0.2, 0.3]]
-classes = [0]
-save_yolo_labels("output/labels/image_aug.txt", bboxes, classes)
-# Creates file with: "0 0.50000000 0.50000000 0.20000000 0.30000000"
-```
-
-**Warning:** This function OVERWRITES existing files!
-
----
-
-### 3. `load_image(image_path)`
-
-Loads an image using OpenCV.
-
-**Arguments:**
-- `image_path`: Path to the image (e.g., `"dataset/img/image.jpg"`)
-
-**Returns:**
-- `image`: Numpy array with shape `(height, width, 3)` in BGR format
-- `None` if loading failed
-
-**What it does:**
-1. Checks if file exists
-2. Loads image with `cv2.imread()`
-3. Validates the image loaded successfully
-4. Prints dimensions
-5. Returns the image as numpy array
-
-**Example:**
-```python
-image = load_image("dataset/img/image_1.jpg")
-# image.shape = (640, 640, 3)
-# Format: BGR (Blue, Green, Red)
-```
-
-**Note:** OpenCV uses BGR format, not RGB!
-
----
-
-### 4. `load_image_and_labels(base_name, img_dir="dataset/img", label_dir="dataset/labels")`
-
-Loads both image and labels together using just the base filename.
-
-**Arguments:**
-- `base_name`: Filename without extension or directory (e.g., `"image_1"`)
-- `img_dir`: Directory containing images (default: `"dataset/img"`)
-- `label_dir`: Directory containing labels (default: `"dataset/labels"`)
-
-**Returns:**
-- `image`: The loaded image
-- `bboxes`: List of bounding boxes
-- `class_labels`: List of class IDs
-
-**What it does:**
-1. Constructs full paths: `{img_dir}/{base_name}.jpg` and `{label_dir}/{base_name}.txt`
-2. Calls `load_image()` and `load_yolo_labels()`
-3. Validates everything loaded correctly
-4. Returns all three together
-
-**Why use this?**
-- Simpler code when working with image-label pairs
-- Ensures image and labels match
-- Only need to specify filename once
-
-**Example:**
-```python
-# Instead of:
-image = load_image("dataset/img/image_1.jpg")
-bboxes, classes = load_yolo_labels("dataset/labels/image_1.txt")
-
-# Just do:
-image, bboxes, classes = load_image_and_labels("image_1")
-```
-
-**Edge cases:**
-- Empty label file → Returns `image, [], []`
-- Missing label file → Returns `image, [], []`
-- Missing image → Returns `None, [], []`
-
----
-
-## Images without objects
-
-It's **perfectly normal** to have images with empty label files!
-
-```
-dataset/labels/image_no_drone.txt
-(empty file)
-```
-
-This represents a **negative example** - teaching the model what is NOT a drone.
-
-A good dataset should have:
-- 70% images WITH drones
-- 30% images WITHOUT drones (to avoid false positives)
-
-Our functions handle empty files gracefully:
-```python
-bboxes, classes = load_yolo_labels("empty_file.txt")
-# Returns: [], []  (no error!)
-```
-
----
-
-## Usage example
-
-```python
-from augmentation import load_image_and_labels, save_yolo_labels
-
-# Load existing data
-image, bboxes, classes = load_image_and_labels("image_1")
-
-# After augmentation (coordinates are adjusted automatically by albumentations)
-new_image = transformed_image  # From albumentations
-new_bboxes = [[0.80, 0.51, 0.02, 0.04]]  # Example
-
-# Save to new file
-save_yolo_labels("dataset_augmented/labels/image_1_aug.txt", new_bboxes, classes)
-```
-
----
-
-## Test the functions
+## Run the augmentation script
+From the project root:
 
 ```bash
-python3 augmentation.py
+python3 src/augmentation/augmentation.py
 ```
 
-This will run 4 tests:
-1. Load a YOLO label file
-2. Save and reload to verify format
-3. Load an image and show dimensions
-4. Load image + labels together (combined function)
+The script will:
+- Scan `Datasets/img/*.jpg` for original images (it ignores files that already have augmentation suffixes),
+- Apply the configured transforms to each original image,
+- Write augmented images to `Datasets/img/` and labels to `Datasets/labels/` using the suffix `_transformname`.
+
+## How bboxes outside the image are handled
+- The augmentation pipelines use `A.BboxParams(format='yolo', label_fields=['class_labels'], min_visibility=0.3, clip=True)`.
+- `min_visibility=0.3` means a bbox is kept only if at least 30% of its area remains visible after transform.
+- `clip=True` constrains coordinates to [0,1]. If all bboxes are dropped for a transform, that augmented image is skipped.
+
+Adjust `min_visibility` (lower to keep more partial boxes, raise to be stricter) or reduce transform strength if many augmentations are skipped.
+
+## Quick notes / next steps
+- Use `visualize.py` (recommended) to draw bboxes on augmented images before training.
+- Optionally add CLI flags to `augmentation.py` (e.g. `--min-visibility`, `--transforms`) to make runs configurable without editing code.
 

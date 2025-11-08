@@ -44,9 +44,6 @@ def apply_augmentation(image, bboxes, class_labels, transform_type="horizontal_f
             A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.4, p=1.0)
         ], bbox_params=bbox_params),
         
-        "weather": A.Compose([
-            A.RandomFog(fog_coef_lower=0.1, fog_coef_upper=0.3, p=1.0)
-        ], bbox_params=bbox_params),
     }
     
     if transform_type not in transforms_dict:
@@ -75,7 +72,7 @@ if __name__ == "__main__":
     
     all_images = glob.glob("Datasets/img/*.jpg")
     transform_suffixes = ["_blur", "_brightness", "_horizontal_flip", "_vertical_flip", 
-                         "_rotation", "_scale", "_perspective", "_noise", "_weather"]
+                         "_rotation", "_scale", "_perspective", "_noise"]
     
     original_images = [img for img in all_images 
                       if not any(suffix in img for suffix in transform_suffixes)]
