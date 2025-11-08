@@ -62,6 +62,21 @@ augmentation:
 	@echo ""
 	@echo "$(GREEN)✅ Augmentation terminée !$(NC)"	
 
+## train: Entraîne le modèle
+train:
+	@echo "$(BLUE)🚀 Lancement de l'entraînement...$(NC)"
+	$(PYTHON) src/train/train.py
+#	ou : yolo task=detect mode=train model=yolov8s.pt data=data.yaml epochs=60 imgsz=640 #batch=16
+	@echo "$(GREEN)✅ Entraînement terminé !$(NC)"
+
+
+## predict: Effectue des prédictions sur des images
+predict:
+	@echo "$(BLUE)🔍 Lancement des prédictions...$(NC)"
+	$(PYTHON) src/predict/predict.py
+#	ou : yolo task=detect mode=predict model=runs/detect/train3/weights/best.pt source=data/val/images save=True
+	@echo "$(GREEN)✅ Prédictions terminées !$(NC)"
+
 ## clean: Nettoie les fichiers temporaires
 clean:
 	@echo "$(BLUE)🧹 Nettoyage...$(NC)"
@@ -76,7 +91,8 @@ clean:
 	rm -rf runs/detect/train*
 	rm -rf runs/detect/predict*
 # 	clean cache created by training in dataset
-	rm -rf Datasets/dataset/train/labels.cache
-	rm -rf Datasets/dataset/val/labels.cache
+	rm -rf Datasets/augmented_train_dataset/labels.cache
+	rm -rf Datasets/splited_dataset/val/labels.cache
+
 
 	@echo "$(GREEN)✅ Nettoyage terminé$(NC)"

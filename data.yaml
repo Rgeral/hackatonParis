@@ -1,9 +1,9 @@
 #Configuration file
 
 # Train/val/test sets
-path: Datasets/dataset/
-train: train/images/
-val: val/images/
+path:
+train: Datasets/augmented_train_dataset/images/
+val: Datasets/splited_dataset/val/images/
 # test: ../images/test/
 
 # Classes
