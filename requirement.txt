@@ -11,8 +11,9 @@ torchvision>=0.17.0
 ultralytics>=8.0.0     # YOLO v8+ (facile et moderne)
 pycocotools>=2.0.6     # format COCO & métriques mAP
 
-# Augmentations pour images drone
-albumentations>=1.3.0
+# Augmentations pour images drone (version stable)
+albumentations==2.0.8
+albucore==0.0.24
 
 # Visualisation
 matplotlib>=3.7
@@ -21,5 +22,4 @@ tqdm>=4.65
 # Utilitaires
 pyyaml>=6.0
 python-dotenv>=1.0
-
 
