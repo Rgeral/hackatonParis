@@ -53,6 +53,12 @@ split:
 	@echo "$(GREEN)✅ Split terminé !$(NC)"
 	@echo "$(YELLOW)Prochaine étape : Augmentation du train set$(NC)"
 
+augmentation:
+	@echo "$(BLUE)🛠️  Lancement de l'augmentation du train dataset...$(NC)"
+	$(PYTHON) src/augmentation/augmentation.py
+	@echo ""
+	@echo "$(GREEN)✅ Augmentation terminée !$(NC)"	
+
 ## clean: Nettoie les fichiers temporaires
 clean:
 	@echo "$(BLUE)🧹 Nettoyage...$(NC)"
