@@ -22,6 +22,9 @@ help:
 	@echo "  $(GREEN)make venv$(NC)        - Crée l'environnement virtuel Python"
 	@echo "  $(GREEN)make install$(NC)     - Installe les dépendances"
 	@echo "  $(GREEN)make split$(NC)       - Split le dataset en train/val/test (70/20/10)"
+	@echo "  $(GREEN)make augmentation$(NC) - Augmente les données du train set"
+	@echo "  $(GREEN)make train$(NC)       - Entraîne le modèle"
+	@echo "  $(GREEN)make predict$(NC)     - Effectue des prédictions sur des images"
 	@echo "  $(GREEN)make clean$(NC)       - Nettoie les fichiers temporaires"
 	@echo "  $(GREEN)make help$(NC)        - Affiche cette aide"
 	@echo ""
@@ -66,4 +69,14 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+
+#	clean venv
+# 	rm -rf .venv
+# 	clean infos from train and predict runs
+	rm -rf runs/detect/train*
+	rm -rf runs/detect/predict*
+# 	clean cache created by training in dataset
+	rm -rf Datasets/dataset/train/labels.cache
+	rm -rf Datasets/dataset/val/labels.cache
+
 	@echo "$(GREEN)✅ Nettoyage terminé$(NC)"
