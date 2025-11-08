@@ -1,7 +1,7 @@
 #Configuration file
 
 # Train/val/test sets
-path: data/
+path: Datasets/dataset/
 train: train/images/
 val: val/images/
 # test: ../images/test/
