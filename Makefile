@@ -22,6 +22,7 @@ help:
 	@echo "  $(GREEN)make venv$(NC)        - Crée l'environnement virtuel Python"
 	@echo "  $(GREEN)make install$(NC)     - Installe les dépendances"
 	@echo "  $(GREEN)make split$(NC)       - Split le dataset en train/val/test (70/20/10)"
+	@echo "  $(GREEN)make augmentation$(NC) - Augmente les données du train set"
 	@echo "  $(GREEN)make train$(NC)       - Entraîne le modèle"
 	@echo "  $(GREEN)make predict$(NC)     - Effectue des prédictions sur des images"
 	@echo "  $(GREEN)make clean$(NC)       - Nettoie les fichiers temporaires"
@@ -56,6 +57,12 @@ split:
 	@echo "$(YELLOW)Prochaine étape : Augmentation du train set$(NC)"
 
 
+# augmentation : Augmente les données du train set
+augmentation:
+    @echo "$(BLUE)🛠️  Lancement de l'augmentation du train dataset...$(NC)"
+    $(PYTHON) src/augmentation/augmentation.py
+    @echo ""
+    @echo "$(GREEN)✅ Augmentation terminée !$(NC)"    
 ## train: Entraîne le modèle
 train:
 	@echo "$(BLUE)🚀 Lancement de l'entraînement...$(NC)"
