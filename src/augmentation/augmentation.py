@@ -114,7 +114,7 @@ def load_image(image_path):
     return image
 
 
-def load_image_and_labels(base_name, img_dir="dataset/img", label_dir="dataset/labels"):
+def load_image_and_labels(base_name, img_dir="Datasets/img", label_dir="Datasets/labels"):
     # Construire les chemins complets
     image_path = f"{img_dir}/{base_name}.jpg"
     label_path = f"{label_dir}/{base_name}.txt"
@@ -177,7 +177,7 @@ def apply_augmentation(image, bboxes, class_labels, transform_type="horizontal_f
         ], bbox_params=A.BboxParams(format='yolo', label_fields=['class_labels'])),
         
         "noise": A.Compose([
-            A.GaussNoise(var_limit=(2.0, 10.0), p=1.0)  # Bruit très léger
+            A.GaussNoise(var_limit=(1.0, 5.0), p=1.0)  # Bruit ultra léger
         ], bbox_params=A.BboxParams(format='yolo', label_fields=['class_labels'])),
         
         "brightness": A.Compose([
@@ -221,10 +221,10 @@ if __name__ == "__main__":
     transformations_to_test = [
         ("horizontal_flip", "📐 Flip horizontal"),
         ("rotation", "🔄 Rotation (±15°)"),
-        ("scale", "🔍 Scaling/Zoom (0.8x-1.2x)"),
-        ("perspective", "📐 Perspective projective"),
+        ("scale", "🔍 Zoom caméra"),
+        ("perspective", "📐 Perspective"),
         ("blur", "💨 Flou gaussien"),
-        ("noise", "📡 Bruit gaussien très léger (5-15)"),
+        ("noise", "📡 Bruit ultra léger (1-5)"),
         ("brightness", "💡 Luminosité ±20%"),
     ]
     
@@ -262,8 +262,8 @@ if __name__ == "__main__":
         
         # Sauvegarder avec nom original + suffixe transformation
         # Ex: image_1_20250901_230254_jpg.rf.148f935c5d8de1ed1d797f649b8a6b1d_horizontal_flip.jpg
-        output_image = f"dataset/img/{base_name}_{transform_name}.jpg"
-        output_label = f"dataset/labels/{base_name}_{transform_name}.txt"
+        output_image = f"Datasets/img/{base_name}_{transform_name}.jpg"
+        output_label = f"Datasets/labels/{base_name}_{transform_name}.txt"
         
         cv2.imwrite(output_image, aug_image)
         save_yolo_labels(output_label, aug_bboxes, aug_class_labels)
@@ -273,5 +273,5 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("🎉 TESTS TERMINÉS !")
     print("=" * 70)
-    print(f"📁 Résultats dans dataset/img/ et dataset/labels/\n")
+    print(f"📁 Résultats dans Datasets/img/ et Datasets/labels/\n")
 
