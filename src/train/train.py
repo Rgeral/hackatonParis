@@ -5,7 +5,7 @@ def main():
 	model = YOLO('yolov8s.pt')
 	model.train(
 		data='data.yaml',
-		epochs=5,
+		epochs=60,
 		imgsz=640,
 		batch=16,
 		device=0

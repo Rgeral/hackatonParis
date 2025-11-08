@@ -4,7 +4,7 @@ import glob
 def main():
 
 	# Prédiction sur les images de validation avec le meilleur modèle entraîné
-	best_model = YOLO('runs/detect/train3/weights/best.pt')
+	best_model = YOLO('runs/detect/train/weights/best.pt')
 	results = best_model.predict(
 		source='Datasets/dataset/val/images',
 		save=True,		# sauvegarde les images annotées
