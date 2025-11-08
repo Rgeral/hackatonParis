@@ -62,7 +62,7 @@ def load_image_and_labels(base_name, img_dir="Datasets/img", label_dir="Datasets
     image = load_image(image_path)
     bboxes, class_labels = load_yolo_labels(label_path)
     
-    if image is None or len(bboxes) == 0:
+    if image is None:
         return None, [], []
     
     return image, bboxes, class_labels

@@ -61,7 +61,7 @@ if __name__ == "__main__":
     source_dir = "Datasets/splited_dataset/train"
     target_dir = "Datasets/augmented_train_dataset"
     
-    # Step 1: Create directory structure
+    # Create directory structure
     if os.path.exists(target_dir):
         print(f"Cleaning existing {target_dir}...")
         shutil.rmtree(target_dir)
@@ -70,12 +70,12 @@ if __name__ == "__main__":
     os.makedirs(f"{target_dir}/images", exist_ok=True)
     os.makedirs(f"{target_dir}/labels", exist_ok=True)
     
-    # Step 2: Create classes.txt file
+    # Create classes.txt file
     with open(f"{target_dir}/classes.txt", 'w') as f:
         f.write("Drone\n")
     print(f"Created classes.txt with 'Drone'")
     
-    # Step 3: Copy images and labels
+    # Copy images and labels
     print(f"Copying {source_dir} to {target_dir}...")
     for img_file in glob.glob(f"{source_dir}/images/*"):
         shutil.copy2(img_file, f"{target_dir}/images/")
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     
     total_generated = 0
     total_skipped = 0
-    images_ignored = 0
+    images_without_labels = 0
     
     # Apply augmentations
     img_dir = f"{target_dir}/images"
@@ -103,16 +103,20 @@ if __name__ == "__main__":
     for base_name in base_names:
         image, bboxes, class_labels = load_image_and_labels(base_name, img_dir=img_dir, label_dir=label_dir)
 
-        if image is None or len(bboxes) == 0:
-            images_ignored += 1
+        if image is None:
             continue
+        
+        # Track images without labels (negatives)
+        is_negative = len(bboxes) == 0
 
         for transform_name in transformations_to_test:
             aug_image, aug_bboxes, aug_class_labels = apply_augmentation(
                 image, bboxes, class_labels, transform_type=transform_name
             )
 
-            if len(aug_bboxes) == 0:
+            # For negatives, always save (no bbox check needed)
+            # For positives, skip if all bboxes are lost
+            if not is_negative and len(aug_bboxes) == 0:
                 total_skipped += 1
                 continue
 
@@ -123,6 +127,8 @@ if __name__ == "__main__":
             save_yolo_labels(output_label, aug_bboxes, aug_class_labels)
 
             total_generated += 1
+            
+            if is_negative:
+                images_without_labels += 1
     
-    # concise summary
-    print(f"Done: {total_generated} augmented images generated; {total_skipped} skips; {images_ignored} ignored images")
+    print(f"Done: {total_generated} augmented images generated ({images_without_labels} from negatives); {total_skipped} skips")
