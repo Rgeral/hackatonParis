@@ -1,0 +1,12 @@
+#Configuration file
+
+# Train/val/test sets
+path: data/
+train: train/images/
+val: val/images/
+# test: ../images/test/
+
+# Classes
+names:
+  0: Drone
+  # 1: No Drone
