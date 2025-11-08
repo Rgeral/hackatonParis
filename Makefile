@@ -22,6 +22,9 @@ help:
 	@echo "  $(GREEN)make venv$(NC)        - Crée l'environnement virtuel Python"
 	@echo "  $(GREEN)make install$(NC)     - Installe les dépendances"
 	@echo "  $(GREEN)make split$(NC)       - Split le dataset en train/val/test (70/20/10)"
+	@echo "  $(GREEN)make augmentation$(NC) - Augmente les données du train set"
+	@echo "  $(GREEN)make train$(NC)       - Entraîne le modèle"
+	@echo "  $(GREEN)make predict$(NC)     - Effectue des prédictions sur des images"
 	@echo "  $(GREEN)make clean$(NC)       - Nettoie les fichiers temporaires"
 	@echo "  $(GREEN)make help$(NC)        - Affiche cette aide"
 	@echo ""
@@ -53,6 +56,27 @@ split:
 	@echo "$(GREEN)✅ Split terminé !$(NC)"
 	@echo "$(YELLOW)Prochaine étape : Augmentation du train set$(NC)"
 
+augmentation:
+	@echo "$(BLUE)🛠️  Lancement de l'augmentation du train dataset...$(NC)"
+	$(PYTHON) src/augmentation/augmentation.py
+	@echo ""
+	@echo "$(GREEN)✅ Augmentation terminée !$(NC)"	
+
+## train: Entraîne le modèle
+train:
+	@echo "$(BLUE)🚀 Lancement de l'entraînement...$(NC)"
+	$(PYTHON) src/train/train.py
+#	ou : yolo task=detect mode=train model=yolov8s.pt data=data.yaml epochs=60 imgsz=640 #batch=16
+	@echo "$(GREEN)✅ Entraînement terminé !$(NC)"
+
+
+## predict: Effectue des prédictions sur des images
+predict:
+	@echo "$(BLUE)🔍 Lancement des prédictions...$(NC)"
+	$(PYTHON) src/predict/predict.py
+#	ou : yolo task=detect mode=predict model=runs/detect/train3/weights/best.pt source=data/val/images save=True
+	@echo "$(GREEN)✅ Prédictions terminées !$(NC)"
+
 ## clean: Nettoie les fichiers temporaires
 clean:
 	@echo "$(BLUE)🧹 Nettoyage...$(NC)"
@@ -60,4 +84,15 @@ clean:
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+
+#	clean venv
+# 	rm -rf .venv
+# 	clean infos from train and predict runs
+	rm -rf runs/detect/train*
+	rm -rf runs/detect/predict*
+# 	clean cache created by training in dataset
+	rm -rf Datasets/augmented_train_dataset/labels.cache
+	rm -rf Datasets/splited_dataset/val/labels.cache
+
+
 	@echo "$(GREEN)✅ Nettoyage terminé$(NC)"
