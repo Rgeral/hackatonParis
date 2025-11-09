@@ -1,6 +1,9 @@
 import cv2
 import albumentations as A
+from tqdm import tqdm
 from utils import load_image_and_labels, save_yolo_labels
+import multiprocessing as mp
+from functools import partial
 
 
 def apply_augmentation(image, bboxes, class_labels, transform_type="horizontal_flip"):
@@ -42,20 +45,58 @@ def apply_augmentation(image, bboxes, class_labels, transform_type="horizontal_f
     return transformed['image'], transformed['bboxes'], class_labels
 
 
+def process_single_image(base_name, img_dir, label_dir, transformations_to_test):
+    """
+    Process a single image with all its transformations.
+    Returns: (generated_count, skipped_count, negative_count)
+    """
+    image, bboxes, class_labels = load_image_and_labels(base_name, img_dir=img_dir, label_dir=label_dir)
+    
+    if image is None:
+        return 0, 0, 0
+    
+    is_negative = len(bboxes) == 0
+    generated = 0
+    skipped = 0
+    negatives = 0
+    
+    for transform_name in transformations_to_test:
+        aug_image, aug_bboxes, aug_class_labels = apply_augmentation(
+            image, bboxes, class_labels, transform_type=transform_name
+        )
+        
+        # For negatives, always save (no bbox check needed)
+        # For positives, skip if all bboxes are lost
+        if not is_negative and len(aug_bboxes) == 0:
+            skipped += 1
+            continue
+        
+        output_image = f"{img_dir}/{base_name}_{transform_name}.jpg"
+        output_label = f"{label_dir}/{base_name}_{transform_name}.txt"
+        
+        cv2.imwrite(output_image, aug_image)
+        save_yolo_labels(output_label, aug_bboxes, aug_class_labels)
+        
+        generated += 1
+        if is_negative:
+            negatives += 1
+    
+    return generated, skipped, negatives
+
+
 
 if __name__ == "__main__":
     import os
     import glob
     import shutil
     
+    # Transformations les plus utiles pour la détection de drones
+    # Réduites de 7 à 4 pour optimiser le temps et la pertinence
     transformations_to_test = [
-        "horizontal_flip",
-        "rotation",
-        "scale",
-        "perspective",
-        "blur",
-        "noise",
-        "brightness",
+        "horizontal_flip",    # Très utile : symétrie naturelle
+        "rotation",          # Très utile : drones à différents angles
+        "brightness",        # Très utile : conditions d'éclairage variables
+        "blur",             # Utile : simule mouvement ou mauvaise qualité caméra
     ]
     
     source_dir = "Datasets/splited_dataset/train"
@@ -100,35 +141,67 @@ if __name__ == "__main__":
     img_dir = f"{target_dir}/images"
     label_dir = f"{target_dir}/labels"
     
-    for base_name in base_names:
-        image, bboxes, class_labels = load_image_and_labels(base_name, img_dir=img_dir, label_dir=label_dir)
-
-        if image is None:
-            continue
-        
-        # Track images without labels (negatives)
-        is_negative = len(bboxes) == 0
-
-        for transform_name in transformations_to_test:
-            aug_image, aug_bboxes, aug_class_labels = apply_augmentation(
-                image, bboxes, class_labels, transform_type=transform_name
-            )
-
-            # For negatives, always save (no bbox check needed)
-            # For positives, skip if all bboxes are lost
-            if not is_negative and len(aug_bboxes) == 0:
-                total_skipped += 1
-                continue
-
-            output_image = f"{img_dir}/{base_name}_{transform_name}.jpg"
-            output_label = f"{label_dir}/{base_name}_{transform_name}.txt"
-
-            cv2.imwrite(output_image, aug_image)
-            save_yolo_labels(output_label, aug_bboxes, aug_class_labels)
-
-            total_generated += 1
-            
-            if is_negative:
-                images_without_labels += 1
+    print(f"\nAugmentation des images du dossier train...")
+    print(f"Nombre d'images originales à augmenter: {len(base_names)}")
+    print(f"Nombre de transformations par image: {len(transformations_to_test)}")
+    print(f"Total attendu: {len(base_names) * len(transformations_to_test)} images augmentées\n")
     
-    print(f"Done: {total_generated} augmented images generated ({images_without_labels} from negatives); {total_skipped} skips")
+    # Detect available CPU cores
+    num_cores = mp.cpu_count()
+    use_multiprocessing = num_cores > 1
+    
+    if use_multiprocessing:
+        # Use 75% of cores to avoid overloading the system
+        num_workers = max(1, int(num_cores * 0.75))
+        print(f"🚀 Mode multiprocessing activé: utilisation de {num_workers}/{num_cores} cœurs CPU\n")
+    else:
+        print(f"⚙️  Mode séquentiel (1 cœur détecté)\n")
+    
+    try:
+        if use_multiprocessing:
+            # Multiprocessing mode with progress bar
+            process_func = partial(process_single_image, 
+                                  img_dir=img_dir, 
+                                  label_dir=label_dir, 
+                                  transformations_to_test=transformations_to_test)
+            
+            with mp.Pool(processes=num_workers) as pool:
+                results = list(tqdm(
+                    pool.imap(process_func, base_names),
+                    total=len(base_names),
+                    desc="🔄 Progression",
+                    unit="img"
+                ))
+            
+            # Aggregate results
+            for generated, skipped, negatives in results:
+                total_generated += generated
+                total_skipped += skipped
+                images_without_labels += negatives
+        
+        else:
+            # Sequential fallback mode
+            for base_name in tqdm(base_names, desc="🔄 Progression", unit="img"):
+                generated, skipped, negatives = process_single_image(
+                    base_name, img_dir, label_dir, transformations_to_test
+                )
+                total_generated += generated
+                total_skipped += skipped
+                images_without_labels += negatives
+    
+    except Exception as e:
+        print(f"\n⚠️  Erreur multiprocessing, basculement en mode séquentiel: {e}")
+        # Fallback to sequential processing
+        total_generated = 0
+        total_skipped = 0
+        images_without_labels = 0
+        
+        for base_name in tqdm(base_names, desc="🔄 Progression (mode secours)", unit="img"):
+            generated, skipped, negatives = process_single_image(
+                base_name, img_dir, label_dir, transformations_to_test
+            )
+            total_generated += generated
+            total_skipped += skipped
+            images_without_labels += negatives
+    
+    print(f"\n✅ Terminé: {total_generated} images augmentées générées ({images_without_labels} depuis négatives); {total_skipped} ignorées")
