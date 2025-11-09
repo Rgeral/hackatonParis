@@ -59,10 +59,10 @@ split:
 
 # augmentation : Augmente les données du train set
 augmentation:
-    @echo "$(BLUE)🛠️  Lancement de l'augmentation du train dataset...$(NC)"
-    $(PYTHON) src/augmentation/augmentation.py
-    @echo ""
-    @echo "$(GREEN)✅ Augmentation terminée !$(NC)"    
+	@echo "$(BLUE)🛠️  Lancement de l'augmentation du train dataset...$(NC)"
+	$(PYTHON) src/augmentation/augmentation.py
+	@echo ""
+	@echo "$(GREEN)✅ Augmentation terminée !$(NC)"    
 ## train: Entraîne le modèle
 train:
 	@echo "$(BLUE)🚀 Lancement de l'entraînement...$(NC)"
