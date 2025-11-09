@@ -159,39 +159,6 @@ def copy_files(
     return stats
 
 
-def create_yaml_config(
-    output_dir: Path,
-    stats: dict,
-    num_classes: int = 1,
-    class_names: List[str] = None
-) -> None:
-    """
-    Crée le fichier data.yaml pour YOLO
-    
-    Args:
-        output_dir: Dossier racine du dataset
-        stats: Statistiques du split
-        num_classes: Nombre de classes
-        class_names: Noms des classes
-    """
-    if class_names is None:
-        class_names = ["drone"]
-    
-    config = {
-        "path": str(output_dir.absolute()),
-        "train": "train/images",
-        "val": "val/images",
-        "test": "test/images",
-        "nc": num_classes,
-        "names": class_names
-    }
-    
-    yaml_path = output_dir / "data.yaml"
-    
-    with open(yaml_path, "w") as f:
-        yaml.dump(config, f, default_flow_style=False)
-    
-    print(f"\n✅ Fichier YAML créé : {yaml_path}")
 
 
 def print_statistics(stats: dict, total_pairs: int) -> None:
@@ -289,12 +256,12 @@ def main():
     stats = copy_files(splits, output_paths)
     
     # Créer fichier YAML
-    create_yaml_config(
-        output_dir,
-        stats,
-        num_classes=1,
-        class_names=["drone"]
-    )
+    # create_yaml_config(
+    #     output_dir,
+    #     stats,
+    #     num_classes=1,
+    #     class_names=["drone"]
+    # )
     
     # Afficher statistiques
     print_statistics(stats, len(all_pairs))

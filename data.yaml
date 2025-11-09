@@ -1,12 +1,7 @@
-#Configuration file
-
-# Train/val/test sets
-path:
-train: Datasets/augmented_train_dataset/images/
-val: Datasets/splited_dataset/val/images/
-test: Datasets/splited_dataset/test/images/
-
-# Classes
 names:
-  0: Drone
-  # 1: No Drone
+- drone
+nc: 1
+path: Datasets/final_dataset
+test: test/images
+train: train/images
+val: val/images

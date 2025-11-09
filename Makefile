@@ -23,6 +23,7 @@ help:
 	@echo "  $(GREEN)make install$(NC)     - Installe les dépendances"
 	@echo "  $(GREEN)make split$(NC)       - Split le dataset en train/val/test (70/20/10)"
 	@echo "  $(GREEN)make augmentation$(NC) - Augmente les données du train set"
+	@echo "  $(GREEN)make dataset$(NC)    	- Prépare le dataset complet en prenant le train set augmenté et le val/test set splitté"
 	@echo "  $(GREEN)make train$(NC)       - Entraîne le modèle"
 	@echo "  $(GREEN)make predict$(NC)     - Effectue des prédictions sur des images"
 	@echo "  $(GREEN)make clean$(NC)       - Nettoie les fichiers temporaires"
@@ -60,7 +61,21 @@ augmentation:
 	@echo "$(BLUE)🛠️  Lancement de l'augmentation du train dataset...$(NC)"
 	$(PYTHON) src/augmentation/augmentation.py
 	@echo ""
-	@echo "$(GREEN)✅ Augmentation terminée !$(NC)"	
+	@echo "$(GREEN)✅ Augmentation terminée !$(NC)"
+
+dataset:
+	@echo "$(BLUE)📂 Préparation du dataset complet...$(NC)"
+# 	mkdir -p Datasets/final_dataset/train/
+# 	mkdir -p Datasets/final_dataset/val/
+# 	mkdir -p Datasets/final_dataset/test/
+# 	cp -r Datasets/augmented_train_dataset/ Datasets/final_dataset/train/
+# 	cp -r Datasets/splited_dataset/val/ Datasets/final_dataset/val/
+# 	cp -r Datasets/splited_dataset/test/ Datasets/final_dataset/test/
+	$(PYTHON) src/dataset/prepare_dataset.py
+	@echo ""
+	@echo "$(GREEN)✅ Dataset complet prêt !$(NC)"
+
+
 
 ## train: Entraîne le modèle
 train:
@@ -94,5 +109,9 @@ clean:
 	rm -rf Datasets/augmented_train_dataset/labels.cache
 	rm -rf Datasets/splited_dataset/val/labels.cache
 
+#	clean created dataset
+	rm -rf Datasets/augmented_train_dataset/
+	rm -rf Datasets/splited_dataset/
+	rm -rf Datasets/final_dataset/
 
 	@echo "$(GREEN)✅ Nettoyage terminé$(NC)"
