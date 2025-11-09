@@ -97,3 +97,5 @@ Thumbs.db
 /.Spotlight-V100
 
 Datasets/
+.env
+.env.local

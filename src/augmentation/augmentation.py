@@ -4,6 +4,11 @@ from tqdm import tqdm
 from utils import load_image_and_labels, save_yolo_labels
 import multiprocessing as mp
 from functools import partial
+import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 
 def apply_augmentation(image, bboxes, class_labels, transform_type="horizontal_flip"):
@@ -86,7 +91,6 @@ def process_single_image(base_name, img_dir, label_dir, transformations_to_test)
 
 
 if __name__ == "__main__":
-    import os
     import glob
     import shutil
     
@@ -99,8 +103,9 @@ if __name__ == "__main__":
         "blur",             # Utile : simule mouvement ou mauvaise qualité caméra
     ]
     
-    source_dir = "Datasets/splited_dataset/train"
-    target_dir = "Datasets/augmented_train_dataset"
+    # Charger les chemins depuis les variables d'environnement
+    source_dir = os.getenv('AUG_SOURCE_DIR', 'Datasets/splited_dataset/train')
+    target_dir = os.getenv('AUG_TARGET_DIR', 'Datasets/augmented_train_dataset')
     
     # Create directory structure
     if os.path.exists(target_dir):

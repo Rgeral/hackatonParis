@@ -1,5 +1,8 @@
 import os
 import cv2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def load_yolo_labels(label_path):
@@ -54,12 +57,34 @@ def load_image(image_path):
     return image
 
 
-def load_image_and_labels(base_name, img_dir="Datasets/img", label_dir="Datasets/labels"):
-    """Load image and corresponding labels."""
+def load_image_and_labels(base_name, img_dir=None, label_dir=None):
+    """Load image and corresponding labels.
+    
+    Args:
+        base_name: Nom de base du fichier (sans extension)
+        img_dir: Chemin vers le dossier images (défaut: variable AUG_IMG_DIR ou 'Datasets/dataset/images')
+        label_dir: Chemin vers le dossier labels (défaut: variable AUG_LABEL_DIR ou 'Datasets/dataset/labels')
+    
+    Returns:
+        tuple: (image, bboxes, class_labels)
+    """
+    # Utiliser les variables d'environnement si les chemins ne sont pas fournis
+    if img_dir is None:
+        img_dir = os.getenv('AUG_IMG_DIR', 'Datasets/dataset/images')
+    if label_dir is None:
+        label_dir = os.getenv('AUG_LABEL_DIR', 'Datasets/dataset/labels')
+    
     image_path = f"{img_dir}/{base_name}.jpg"
     label_path = f"{label_dir}/{base_name}.txt"
     
     image = load_image(image_path)
+    
+    # Si le fichier label n'existe pas, retourner des labels vides (cas des images négatives)
+    if not os.path.exists(label_path):
+        if image is None:
+            return None, [], []
+        return image, [], []
+    
     bboxes, class_labels = load_yolo_labels(label_path)
     
     if image is None:

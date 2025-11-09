@@ -1,15 +1,21 @@
+import os
 import glob
-
 from ultralytics import YOLO
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 
 def main():
-
 	# Validation sur les images de test avec le meilleur modèle entraîné
-	best_model = YOLO('runs/detect/train/weights/best.pt')
+	model_path = os.getenv('PREDICT_MODEL_PATH', 'runs/detect/train/weights/best.pt')
+	best_model = YOLO(model_path)
+	
 	result = best_model.predict(
-		source='Datasets/splited_dataset/val/images',
-		device=0,
+		source=os.getenv('PREDICT_SOURCE', 'Datasets/splited_dataset/val/images'),
+		device=os.getenv('PREDICT_DEVICE', '0'),
+		conf=float(os.getenv('PREDICT_CONF', '0.25')),
 		save=True
 	)
 
