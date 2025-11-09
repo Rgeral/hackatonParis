@@ -94,18 +94,20 @@ if __name__ == "__main__":
     import glob
     import shutil
     
-    # Transformations les plus utiles pour la détection de drones
-    # Réduites de 7 à 4 pour optimiser le temps et la pertinence
     transformations_to_test = [
-        "horizontal_flip",    # Très utile : symétrie naturelle
-        "rotation",          # Très utile : drones à différents angles
-        "brightness",        # Très utile : conditions d'éclairage variables
-        "blur",             # Utile : simule mouvement ou mauvaise qualité caméra
+        "horizontal_flip",    # Very useful: natural symmetry
+        "rotation",          # Very useful: drones at different angles
+        "brightness",        # Very useful: variable lighting conditions
+        "blur",             # Useful: simulates motion or low camera quality
     ]
     
-    # Charger les chemins depuis les variables d'environnement
+    # Load paths from environment variables
     source_dir = os.getenv('AUG_SOURCE_DIR', 'Datasets/splited_dataset/train')
     target_dir = os.getenv('AUG_TARGET_DIR', 'Datasets/augmented_train_dataset')
+    
+    # Subdirectory names (configurable)
+    images_subdir = os.getenv('AUG_IMAGES_SUBDIR', 'images')
+    labels_subdir = os.getenv('AUG_LABELS_SUBDIR', 'labels')
     
     # Create directory structure
     if os.path.exists(target_dir):
@@ -113,8 +115,8 @@ if __name__ == "__main__":
         shutil.rmtree(target_dir)
     
     print(f"Creating {target_dir} structure...")
-    os.makedirs(f"{target_dir}/images", exist_ok=True)
-    os.makedirs(f"{target_dir}/labels", exist_ok=True)
+    os.makedirs(f"{target_dir}/{images_subdir}", exist_ok=True)
+    os.makedirs(f"{target_dir}/{labels_subdir}", exist_ok=True)
     
     # Create classes.txt file
     with open(f"{target_dir}/classes.txt", 'w') as f:
@@ -123,13 +125,13 @@ if __name__ == "__main__":
     
     # Copy images and labels
     print(f"Copying {source_dir} to {target_dir}...")
-    for img_file in glob.glob(f"{source_dir}/images/*"):
-        shutil.copy2(img_file, f"{target_dir}/images/")
-    for label_file in glob.glob(f"{source_dir}/labels/*"):
-        shutil.copy2(label_file, f"{target_dir}/labels/")
+    for img_file in glob.glob(f"{source_dir}/{images_subdir}/*"):
+        shutil.copy2(img_file, f"{target_dir}/{images_subdir}/")
+    for label_file in glob.glob(f"{source_dir}/{labels_subdir}/*"):
+        shutil.copy2(label_file, f"{target_dir}/{labels_subdir}/")
     print(f"Copy complete.")
     
-    all_images = glob.glob(f"{target_dir}/images/*.jpg")
+    all_images = glob.glob(f"{target_dir}/{images_subdir}/*.jpg")
     transform_suffixes = ["_blur", "_brightness", "_horizontal_flip", "_vertical_flip", 
                          "_rotation", "_scale", "_perspective", "_noise"]
     
@@ -143,28 +145,62 @@ if __name__ == "__main__":
     images_without_labels = 0
     
     # Apply augmentations
-    img_dir = f"{target_dir}/images"
-    label_dir = f"{target_dir}/labels"
+    img_dir = f"{target_dir}/{images_subdir}"
+    label_dir = f"{target_dir}/{labels_subdir}"
     
-    print(f"\nAugmentation des images du dossier train...")
-    print(f"Nombre d'images originales à augmenter: {len(base_names)}")
-    print(f"Nombre de transformations par image: {len(transformations_to_test)}")
-    print(f"Total attendu: {len(base_names) * len(transformations_to_test)} images augmentées\n")
+    print(f"\nAugmenting images from train folder...")
+    print(f"Original images to augment: {len(base_names)}")
+    print(f"Transformations per image: {len(transformations_to_test)}")
+    print(f"Expected total: {len(base_names) * len(transformations_to_test)} augmented images\n")
+    
+    # ========================================
+    # Multiprocessing configuration
+    # ========================================
+    
+    # Load multiprocessing settings from environment
+    multiprocessing_mode = os.getenv('AUG_MULTIPROCESSING', 'auto')
+    cpu_usage_percent = float(os.getenv('AUG_CPU_USAGE', '0.75'))
+    workers_config = os.getenv('AUG_WORKERS', 'auto')
     
     # Detect available CPU cores
     num_cores = mp.cpu_count()
-    use_multiprocessing = num_cores > 1
+    
+    # Determine if multiprocessing should be used
+    if multiprocessing_mode == 'auto':
+        use_multiprocessing = num_cores > 1
+    elif multiprocessing_mode == 'enabled':
+        use_multiprocessing = True
+    else:  # 'disabled'
+        use_multiprocessing = False
     
     if use_multiprocessing:
-        # Use 75% of cores to avoid overloading the system
-        num_workers = max(1, int(num_cores * 0.75))
-        print(f"🚀 Mode multiprocessing activé: utilisation de {num_workers}/{num_cores} cœurs CPU\n")
+        # Smart worker count calculation based on CPU cores
+        if workers_config == 'auto':
+            if num_cores <= 2:
+                num_workers = 1  # Single core for small systems
+            elif num_cores <= 4:
+                num_workers = num_cores - 1  # Leave 1 core free
+            else:
+                num_workers = max(1, int(num_cores * cpu_usage_percent))  # Use percentage
+        else:
+            num_workers = max(1, int(workers_config))
+        
+        # Calculate optimal chunksize for better load balancing
+        if len(base_names) < 100:
+            chunksize = 1  # No chunking for small datasets
+        else:
+            chunksize = max(1, len(base_names) // (num_workers * 4))
+        
+        print(f"🚀 Multiprocessing enabled: {num_workers}/{num_cores} CPU cores")
+        print(f"   Strategy: {cpu_usage_percent*100:.0f}% CPU usage, chunksize={chunksize}\n")
     else:
-        print(f"⚙️  Mode séquentiel (1 cœur détecté)\n")
+        num_workers = 1
+        chunksize = 1
+        print(f"⚙️  Sequential mode (single core)\n")
     
     try:
         if use_multiprocessing:
-            # Multiprocessing mode with progress bar
+            # Multiprocessing mode with progress bar and optimized chunking
             process_func = partial(process_single_image, 
                                   img_dir=img_dir, 
                                   label_dir=label_dir, 
@@ -172,9 +208,9 @@ if __name__ == "__main__":
             
             with mp.Pool(processes=num_workers) as pool:
                 results = list(tqdm(
-                    pool.imap(process_func, base_names),
+                    pool.imap(process_func, base_names, chunksize=chunksize),
                     total=len(base_names),
-                    desc="🔄 Progression",
+                    desc="🔄 Progress",
                     unit="img"
                 ))
             
@@ -186,7 +222,7 @@ if __name__ == "__main__":
         
         else:
             # Sequential fallback mode
-            for base_name in tqdm(base_names, desc="🔄 Progression", unit="img"):
+            for base_name in tqdm(base_names, desc="🔄 Progress", unit="img"):
                 generated, skipped, negatives = process_single_image(
                     base_name, img_dir, label_dir, transformations_to_test
                 )
@@ -195,13 +231,13 @@ if __name__ == "__main__":
                 images_without_labels += negatives
     
     except Exception as e:
-        print(f"\n⚠️  Erreur multiprocessing, basculement en mode séquentiel: {e}")
+        print(f"\n⚠️  Multiprocessing error, falling back to sequential mode: {e}")
         # Fallback to sequential processing
         total_generated = 0
         total_skipped = 0
         images_without_labels = 0
         
-        for base_name in tqdm(base_names, desc="🔄 Progression (mode secours)", unit="img"):
+        for base_name in tqdm(base_names, desc="🔄 Progress (fallback)", unit="img"):
             generated, skipped, negatives = process_single_image(
                 base_name, img_dir, label_dir, transformations_to_test
             )
@@ -209,4 +245,4 @@ if __name__ == "__main__":
             total_skipped += skipped
             images_without_labels += negatives
     
-    print(f"\n✅ Terminé: {total_generated} images augmentées générées ({images_without_labels} depuis négatives); {total_skipped} ignorées")
+    print(f"\n✅ Completed: {total_generated} augmented images generated ({images_without_labels} from negatives); {total_skipped} skipped")
