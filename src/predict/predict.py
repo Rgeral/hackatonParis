@@ -3,28 +3,60 @@ import glob
 from ultralytics import YOLO
 from dotenv import load_dotenv
 
-# Charger les variables d'environnement depuis .env
+# Load environment variables from .env
 load_dotenv()
 
 
+def get_optimal_predict_device():
+	"""
+	Auto-detect best device for prediction
+	
+	Returns:
+		str: Device string ('0', 'cpu', '0,1', etc.)
+	"""
+	device_config = os.getenv('PREDICT_DEVICE', 'auto')
+	
+	# If user specified a device, use it
+	if device_config != 'auto':
+		return device_config
+	
+	# Auto-detection
+	try:
+		import torch
+		
+		if torch.cuda.is_available():
+			gpu_name = torch.cuda.get_device_name(0)
+			print(f"✅ GPU detected: {gpu_name}")
+			return '0'
+		else:
+			print("⚠️  No GPU detected, using CPU")
+			return 'cpu'
+	except ImportError:
+		print("⚠️  PyTorch not available, using CPU")
+		return 'cpu'
+
+
 def main():
-	# Validation sur les images de test avec le meilleur modèle entraîné
+	# Prediction on test images with the best trained model
 	model_path = os.getenv('PREDICT_MODEL_PATH', 'runs/detect/train/weights/best.pt')
 	best_model = YOLO(model_path)
 	
+	# Auto-detect device
+	device = get_optimal_predict_device()
+	
 	result = best_model.predict(
 		source=os.getenv('PREDICT_SOURCE', 'Datasets/splited_dataset/val/images'),
-		device=os.getenv('PREDICT_DEVICE', '0'),
+		device=device,
 		conf=float(os.getenv('PREDICT_CONF', '0.25')),
 		save=True
 	)
 
-	# Affichage des metriques
+	# Display metrics
 	for i, res in enumerate(result):
 		print(f"\nImage {i+1}: {res.orig_shape} -> {res.shape}")
-		print(f"Nombre d'objets détectés: {len(res.boxes)}")
+		print(f"Detected objects: {len(res.boxes)}")
 		for box in res.boxes:
-			print(f"  Classe: {int(box.cls)}, Confiance: {box.conf:.2f}, Boîte: {box.xyxy.tolist()}")
+			print(f"  Class: {int(box.cls)}, Confidence: {box.conf:.2f}, Box: {box.xyxy.tolist()}")
 	# Utiliser val() au lieu de predict() pour obtenir les métriques
 	# metrics = best_model.val(
 	# 	data='data.yaml',
