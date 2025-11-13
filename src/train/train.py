@@ -49,6 +49,9 @@ def main():
 	# Auto-detect device
 	device = get_optimal_train_device()
 	
+	# Get current working directory to ensure results are saved in the right place
+	project_dir = os.getcwd()
+	
 	model.train(
 		data=os.getenv('TRAIN_DATA_YAML', 'data.yaml'),
 		epochs=int(os.getenv('TRAIN_EPOCHS', '5')),
@@ -61,6 +64,8 @@ def main():
 		patience=int(os.getenv('TRAIN_PATIENCE', '50')),     # Early stopping if no improvement
 		plots=True,                                           # Generate result graphs
 		save_period=int(os.getenv('TRAIN_SAVE_PERIOD', '5')),  # Save checkpoints every N epochs
+		project=project_dir,                                  # Force save in current directory
+		name='runs/detect/train'                             # Explicit path for results
 	)
 
 if __name__ == "__main__":

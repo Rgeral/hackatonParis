@@ -96,6 +96,50 @@ Thumbs.db
 # macOS
 /.Spotlight-V100
 
+# Project specific
 Datasets/
 .env
 .env.local
+
+# YOLO training outputs
+runs/
+wandb/
+*.pt
+*.onnx
+*.engine
+*.trt
+*.torchscript
+
+# Cache files
+*.cache
+labels.cache
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Model weights and checkpoints
+weights/
+checkpoints/
+models/*.pt
+models/*.pth
+models/*.onnx
+
+# Logs and monitoring
+logs/
+*.log
+events.out.tfevents.*
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+
+# Next.js (for displayapp)
+displayapp/.next/
+displayapp/out/
+displayapp/node_modules/
+displayapp/.env.local
+displayapp/.env.development.local
+displayapp/.env.test.local
+displayapp/.env.production.local

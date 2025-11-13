@@ -44,19 +44,30 @@ def main():
 	# Auto-detect device
 	device = get_optimal_predict_device()
 	
+	# Get current working directory to ensure results are saved in the right place
+	project_dir = os.getcwd()
+	
 	result = best_model.predict(
 		source=os.getenv('PREDICT_SOURCE', 'Datasets/splited_dataset/val/images'),
 		device=device,
 		conf=float(os.getenv('PREDICT_CONF', '0.25')),
-		save=True
+		save=True,
+		project=project_dir,
+		name='runs/detect/predict'
 	)
 
 	# Display metrics
 	for i, res in enumerate(result):
-		print(f"\nImage {i+1}: {res.orig_shape} -> {res.shape}")
-		print(f"Detected objects: {len(res.boxes)}")
-		for box in res.boxes:
-			print(f"  Class: {int(box.cls)}, Confidence: {box.conf:.2f}, Box: {box.xyxy.tolist()}")
+		print(f"\nImage {i+1}: Original shape: {res.orig_shape}")
+		if res.boxes is not None:
+			print(f"Detected objects: {len(res.boxes)}")
+			for box in res.boxes:
+				cls_id = int(box.cls.item())
+				confidence = float(box.conf.item())
+				bbox = box.xyxy.tolist()[0]  # Get first (and only) box coordinates
+				print(f"  Class: {cls_id}, Confidence: {confidence:.2f}, Box: {bbox}")
+		else:
+			print("No objects detected")
 	# Utiliser val() au lieu de predict() pour obtenir les métriques
 	# metrics = best_model.val(
 	# 	data='data.yaml',
