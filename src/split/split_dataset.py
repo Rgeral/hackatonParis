@@ -8,6 +8,7 @@ Usage:
     python src/split/split_dataset.py
 """
 
+import os
 import random
 import shutil
 from pathlib import Path
@@ -15,6 +16,10 @@ from typing import Tuple, List
 
 import yaml
 from tqdm import tqdm
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 
 def create_directory_structure(output_dir: Path) -> dict:
@@ -226,14 +231,14 @@ def main():
     print("🔀 SPLIT DATASET TRAIN/VAL/TEST")
     print("="*60)
     
-    # Configuration
-    positives_images_dir = Path("Datasets/dataset/images")
-    positives_labels_dir = Path("Datasets/dataset/labels")
+    # Configuration - Charger depuis les variables d'environnement
+    positives_images_dir = Path(os.getenv('SPLIT_POSITIVE_IMAGES_DIR', 'Datasets/dataset/images'))
+    positives_labels_dir = Path(os.getenv('SPLIT_POSITIVE_LABELS_DIR', 'Datasets/dataset/labels'))
     
-    negatives_images_dir = Path("Datasets/dataset/negatives_images")
-    negatives_labels_dir = Path("Datasets/dataset/negatives_labels")
+    negatives_images_dir = Path(os.getenv('SPLIT_NEGATIVE_IMAGES_DIR', 'Datasets/dataset/negatives_images'))
+    negatives_labels_dir = Path(os.getenv('SPLIT_NEGATIVE_LABELS_DIR', 'Datasets/dataset/negatives_labels'))
     
-    output_dir = Path("Datasets/splited_dataset")
+    output_dir = Path(os.getenv('SPLIT_OUTPUT_DIR', 'Datasets/splited_dataset'))
     
     # Vérifier existence des dossiers
     for dir_path in [positives_images_dir, positives_labels_dir,

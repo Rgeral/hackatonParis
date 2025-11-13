@@ -82,7 +82,8 @@ export default function Dashboard() {
 
     const fetchDetections = async () => {
       try {
-        const res = await fetch("/api/detections")
+        const apiUrl = process.env.NEXT_PUBLIC_API_DETECTIONS_URL || "/api/detections"
+        const res = await fetch(apiUrl)
         if (!res.ok) throw new Error("Erreur réseau")
 
         const data = await res.json()
@@ -95,7 +96,8 @@ export default function Dashboard() {
     }
 
     fetchDetections()
-    const interval = setInterval(fetchDetections, 2000) // Polling toutes les 2 secondes au lieu de 500ms
+    const pollingInterval = parseInt(process.env.NEXT_PUBLIC_POLLING_INTERVAL || "2000", 10)
+    const interval = setInterval(fetchDetections, pollingInterval)
 
     return () => clearInterval(interval)
   }, [isPolling])
@@ -108,7 +110,8 @@ export default function Dashboard() {
     if (!confirm("Effacer toutes les détections ?")) return
 
     try {
-      await fetch("/api/detections", { method: "DELETE" })
+      const apiUrl = process.env.NEXT_PUBLIC_API_DETECTIONS_URL || "/api/detections"
+      await fetch(apiUrl, { method: "DELETE" })
       setDetections([])
     } catch (err) {
       console.error("Erreur suppression:", err)

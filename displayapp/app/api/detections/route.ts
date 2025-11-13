@@ -39,6 +39,9 @@ export interface Detection {
 // En prod, utiliser Redis ou une base de données
 let detections: Detection[] = [];
 
+// Configuration - Max détections stockées en mémoire
+const MAX_DETECTIONS = parseInt(process.env.MAX_DETECTIONS_STORED || '100', 10);
+
 /**
  * POST /api/detections
  * Reçoit les détections depuis le script Python
@@ -65,9 +68,9 @@ export async function POST(req: NextRequest) {
     // Ajouter au début du tableau (plus récent en premier)
     detections.unshift(detection);
     
-    // Garder max 100 détections en mémoire
-    if (detections.length > 100) {
-      detections = detections.slice(0, 100);
+    // Garder max N détections en mémoire (configurable via .env)
+    if (detections.length > MAX_DETECTIONS) {
+      detections = detections.slice(0, MAX_DETECTIONS);
     }
     
     console.log(`✅ Détection reçue: ${data.filename} (${data.confidence}%)`);
